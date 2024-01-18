@@ -12,9 +12,9 @@ Dieses Repository enthält den Code für eine Zeiterfassungsanwendung, die als T
 
 **JWT-Token-Initialisierung:** Sichere Benutzerauthentifizierung und Session-Verwaltung mit JSON Web Tokens.
 
-**Frontend-Entwicklung:**
-***JavaScript:*** Für interaktive und dynamische Benutzeroberflächen.
-***HTML:*** Strukturierung des Webinhalts.
+**Frontend-Entwicklung:** <br>
+***JavaScript:*** Für interaktive und dynamische Benutzeroberflächen.<br>
+***HTML:*** Strukturierung des Webinhalts.<br>
 ***CSS:*** Beachten Sie, dass das Styling noch implementiert werden muss, daher fehlt derzeit das visuelle Design.
 
 
