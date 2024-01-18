@@ -7,8 +7,11 @@ Dieses Repository enthält den Code für eine Zeiterfassungsanwendung, die als T
 ## Merkmale
 
 **PHP MVC-Architektur:** Das Backend ist nach dem MVC-Muster strukturiert, was einen organisierten und wartbaren Code ermöglicht.
+
 **Eigener Router:** Ein eigener Router wird für die Handhabung von HTTP-Anfragen ohne externe Frameworks implementiert.
+
 **JWT-Token-Initialisierung:** Sichere Benutzerauthentifizierung und Session-Verwaltung mit JSON Web Tokens.
+
 **Frontend-Entwicklung:**
 ***JavaScript:*** Für interaktive und dynamische Benutzeroberflächen.
 ***HTML:*** Strukturierung des Webinhalts.
