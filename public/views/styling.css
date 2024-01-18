@@ -1,0 +1,249 @@
+body {
+    font-family: 'Ubuntu';
+    color: #333;
+    background-color: #f4f4f4;
+    margin: 0; 
+    height: 100vh; 
+    display: grid;
+    grid-template-columns: 1fr; 
+    grid-template-areas: 
+        "header"
+        "nav"
+        "content";
+    align-items: start;
+    width: 100vw;
+  margin: 0;
+
+
+
+}
+#body{
+   display: inline;
+    align-items: center;
+    align-content: center;
+    text-align: center;
+}
+
+.head {
+    font-size: 1em;
+    display: grid;
+    justify-content: space-between;
+    background-color: #5486B8;
+    grid-column: 1/3;
+
+    color: white;
+}
+
+
+
+.box1 {
+    border-radius: 5px;
+    padding: 30px;
+    grid-column-start: inherit;
+}
+.box2 {
+    border-radius: 5px;
+    padding: 30px;
+    grid-column-end: inherit;
+}
+
+
+
+
+.side-nav ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.side-nav ul li a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    line-height: 2em;
+    transition: background-color 0.3s;
+}
+.side-nav ul li{
+    
+}
+
+.side-nav ul li a:hover {
+    background-color: #5486B8;
+}
+
+#timetracker {
+    width: 30vw;
+    left: 30vw;
+    display: inline-block;
+    position:absolute;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+    padding: 20px; /* Add padding for spacing */
+}
+
+button {
+    background-color: #1D395C;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0a7d9d;
+}
+
+#timerDisplay {
+    font-size: 1.5em;
+    margin-top: 10px;
+}
+
+#manualEntry {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+#response{
+    margin-top: 3vh;
+background-color: #06b07d;
+padding-top: 1.5vh;
+padding-bottom: 1.5vh;
+width: 24vw;
+border-radius: 3vh;
+
+}
+
+@media (min-width: 650px)  {
+    .side-nav {
+        display: grid;
+        left: 0;
+        height: 100vh;
+        width: 25vw;
+        background-color: #1D395C;
+        color: white;
+                margin-right: -20%;
+        
+    
+        padding-top: 40vh;
+    }
+
+
+
+    .menulink
+    {
+        display:inline-block;color:white;text-decoration:none;line-height:2em;transition:background-color 0.3s;width: 95%;
+    }
+}
+
+@media (max-width: 649px)  {
+    .side-nav {
+        display: grid;
+        left: 0;
+        height: auto;
+        width: 100vw;
+        background-color: #1D395C;
+        color: white;
+        padding-top: 0vh;
+    }
+
+    .optbr
+    {
+        display: none;
+    }
+
+
+    #timetracker {
+        width: calc( 100vw - 40px);
+        left:0px;
+    }
+
+    .menulink
+    {
+        margin-bottom: 0.2em;margin-top: 0.2em;font-size:1em;display:inline-block;color:white;text-decoration:none;line-height:2em;transition:background-color 0.3s;width: auto; padding-left: 7px;padding-right: 7px;
+    }
+
+    
+}
+#contentPlaceholder {
+    padding: 20px;
+    overflow-y: scroll;
+}
+
+
+
+.work-hours-table {
+    border-collapse: collapse;
+}
+
+.table-header-row {
+    background-color: #f2f2f2;
+}
+
+.table-header {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.work-hours-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.work-hours-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.work-hours-table tr:hover {
+    background-color: #ddd;
+}
+
+.work-hours-table input[type="text"],
+.work-hours-table input[type="time"],
+.work-hours-table select {
+    padding: 6px;
+    margin: 4px 0;
+    box-sizing: border-box;
+}
+
+.work-hours-table button {
+    padding: 6px 10px;
+    margin: 4px 0;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.work-hours-table button:hover {
+    background-color: #45a049;
+}
+.container {
+    display: grid;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.work-hours-table-container {
+    flex-grow: 2;
+    max-width: 70%; /* Adjust the width of the table container */
+    max-height: 50%;
+    margin-left: 20px; /* Space between table and sidebar */
+}
+
+
+.sidebar {
+    width: 25%; /* Width of the sidebar */
+    background-color: #f4f4f4;
+    padding: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}

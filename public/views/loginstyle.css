@@ -1,0 +1,31 @@
+.error input {
+    border-color: 
+red;
+    border-width: 2px;
+}
+
+.success input {
+    border-color: 
+green;
+    border-width: 2px;
+}
+
+.error span {
+    color: 
+red;
+}
+
+.success span {
+    color: 
+green;
+}
+
+span.error {
+    color: 
+red;
+}
+
+i {
+    font-weight: 900;
+    font-family: 'Font Awesome 5 Free';
+}

@@ -1,0 +1,29 @@
+[
+    { "date": "2023-01-01", "fname": "Neujahr" },
+    { "date": "2023-01-06", "fname": "Heilige Drei Koenige" },
+    { "date": "2023-04-07", "fname": "Karfreitag" },
+    { "date": "2023-04-10", "fname": "Ostermontag" },
+    { "date": "2023-05-01", "fname": "Tag der Arbeit" },
+    { "date": "2023-05-18", "fname": "Christi Himmelfahrt" },
+    { "date": "2023-05-29", "fname": "Pfingstmontag" },
+    { "date": "2023-06-08", "fname": "Fronleichnam" },
+    { "date": "2023-10-03", "fname": "Tag der deutschen Einheit" },
+    { "date": "2023-11-01", "fname": "Allerheiligen" },
+    { "date": "2023-12-25", "fname": "1. Weihnachtstag" },
+    { "date": "2023-12-26", "fname": "2. Weihnachtstag" },
+
+
+    
+    { "date": "2024-01-01", "fname": "Neujahr" },
+    { "date": "2024-01-06", "fname": "Heilige Drei Koenige" },
+    { "date": "2024-04-18", "fname": "Karfreitag" },
+    { "date": "2024-04-21", "fname": "Ostermontag" },
+    { "date": "2024-05-01", "fname": "Tag der Arbeit" },
+    { "date": "2024-05-29", "fname": "Christi Himmelfahrt" },
+    { "date": "2024-06-09", "fname": "Pfingstmontag" },
+    { "date": "2024-06-19", "fname": "Fronleichnam" },
+    { "date": "2024-10-03", "fname": "Tag der deutschen Einheit" },
+    { "date": "2024-11-01", "fname": "Allerheiligen" },
+    { "date": "2024-12-25", "fname": "1. Weihnachtstag" },
+    { "date": "2024-12-26", "fname": "2. Weihnachtstag" }
+]

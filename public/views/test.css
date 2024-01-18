@@ -1,0 +1,35 @@
+.parent {
+    display: grid;
+    width: 100vw;
+    height: 100vh;
+    grid-template-columns: 50% 50%;
+    grid-column-gap: 0px;
+    grid-row-gap: 0px;
+    align-items: center;
+    overflow-y: hidden;
+    }
+.div1 { grid-area: 2; 
+    height: 100%;
+    text-align: center;}
+.div2 { grid-area: 1 ; 
+    justify-content: center;
+    background-color: aquamarine;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    box-sizing: border-box;
+}
+.div3 { 
+    grid-area: 1; 
+    height: 100vh;
+    width: 100vw;
+    align-items: center;
+    overflow-y: scroll;
+}
+.div4 { grid-area:0.5;
+    height: 100%;
+    align-items: center;
+    text-align: center; }
+    .div5{
+        padding:10vh
+    }
