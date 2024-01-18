@@ -1,10 +1,10 @@
-##Zeiterfassung Abschluss Projekt
+## Zeiterfassung Abschluss Projekt
 
-#Introduction
+# Introduction
 
 This repository contains the codebase for a time tracking application, built as part of a final project. The project is designed using PHP with MVC (Model-View-Controller) architecture and includes a custom-built routing mechanism. It also incorporates JWT (JSON Web Tokens) for secure authentication and session management. The front-end is developed using JavaScript, HTML, and CSS.
 
-#Features
+# Features
 
 PHP MVC Architecture: The backend is structured using the MVC pattern, allowing for organized and maintainable code.
 Custom Router: A custom router is implemented for handling HTTP requests without relying on any external frameworks.
