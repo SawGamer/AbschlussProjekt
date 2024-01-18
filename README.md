@@ -17,6 +17,9 @@ Dieses Repository enthält den Code für eine Zeiterfassungsanwendung, die als T
 ***HTML:*** Strukturierung des Webinhalts.<br>
 ***CSS:*** Beachten Sie, dass das Styling noch implementiert werden muss, daher fehlt derzeit das visuelle Design.
 
+## Wichtiger Hinweis
+
+Dieses Projekt funktioniert nicht ohne eine entsprechende Datenbank (SQL-Datei). Die SQL-Datei ist erforderlich, um die Anwendung vollständig funktionsfähig zu machen. Dieses Repository dient hauptsächlich dazu, den PHP- und JavaScript-Code von Experten überprüfen zu lassen.
 
 
 
