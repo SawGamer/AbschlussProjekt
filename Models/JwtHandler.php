@@ -1,111 +1,101 @@
 <?php
+
+declare(strict_types=1);
+
+/**
+ * Creates and verifies HS256 JSON Web Tokens.
+ */
 class JwtHandler
 {
-    private $headers;
+    private array $header;
+    private string $secret;
+    private string $issuer;
+    private string $audience;
+    private int $ttl;
 
-
-    private $secret;
-
-    public function __construct($jwtconfig)
+    public function __construct(array $jwtConfig)
     {
-        $this->headers = $jwtconfig["header"];
-        $this->secret = $jwtconfig["secret"];
+        $this->header = $jwtConfig['header'];
+        $this->secret = $jwtConfig['secret'];
+        $this->issuer = $jwtConfig['issuer'];
+        $this->audience = $jwtConfig['audience'];
+        $this->ttl = $jwtConfig['ttl'];
     }
 
-
-    public function generate(array $payload): string
+    /**
+     * Signs the given claims. Adds issuer, audience, issued-at and expiry.
+     */
+    public function generate(array $claims): string
     {
-        $headers = $this->encode(json_encode($this->headers)); // encode headers
-        $payload["exp"] = time() + 1000; // add expiration to payload
-        $payload = $this->encode(json_encode($payload)); // encode payload
-        $signature = hash_hmac('SHA256', "$headers.$payload", $this->secret, true); // create SHA256 signature
-        $signature = $this->encode($signature); // encode signature
+        $now = time();
+        $claims += [
+            'iss' => $this->issuer,
+            'aud' => $this->audience,
+            'iat' => $now,
+            'exp' => $now + $this->ttl,
+        ];
 
-        return "$headers.$payload.$signature";
+        $header = self::base64UrlEncode(json_encode($this->header));
+        $payload = self::base64UrlEncode(json_encode($claims));
+        $signature = self::base64UrlEncode($this->sign("$header.$payload"));
+
+        return "$header.$payload.$signature";
     }
 
-
-    private function encode(string $str): string
+    /**
+     * Returns the token's claims, or null if the token is malformed,
+     * badly signed, expired, or issued for another issuer or audience.
+     */
+    public function decode(string $jwt): ?array
     {
-        return rtrim(strtr(base64_encode($str), '+/', '-_'), '='); // base64 encode string
-    }
+        $parts = explode('.', $jwt);
+        if (count($parts) !== 3) {
+            return null;
+        }
+        [$header64, $payload64, $signature64] = $parts;
 
+        $header = json_decode(self::base64UrlDecode($header64), true);
+        if (!is_array($header) || ($header['alg'] ?? null) !== 'HS256') {
+            return null;
+        }
+
+        $expected = $this->sign("$header64.$payload64");
+        if (!hash_equals($expected, self::base64UrlDecode($signature64))) {
+            return null;
+        }
+
+        $claims = json_decode(self::base64UrlDecode($payload64), true);
+        if (!is_array($claims)) {
+            return null;
+        }
+        if (!is_int($claims['exp'] ?? null) || $claims['exp'] < time()) {
+            return null;
+        }
+        if (($claims['iss'] ?? null) !== $this->issuer || ($claims['aud'] ?? null) !== $this->audience) {
+            return null;
+        }
+
+        return $claims;
+    }
 
     public function is_valid(string $jwt): bool
     {
-        $token = explode('.', $jwt);
-        if (!isset($token[1]) && !isset($token[2])) {
-            return false;
-        }
-        $headers = base64_decode($token[0]);
-        $payload = base64_decode($token[1]);
-        $clientSignature = $token[2];
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return false;
-        }
-        if (!json_decode($payload)) {
-            return false;
-        }
-
-        if ((json_decode($payload)->exp - time()) < 0) {
-            return false;
-        }
-
-        if (isset(json_decode($payload)->iss)) {
-            if (json_decode($headers)->iss != json_decode($payload)->iss) {
-                return false;
-            }
-        } else {
-            return false;
-        }
-
-        if (isset(json_decode($payload)->aud)) {
-            if (json_decode($headers)->aud != json_decode($payload)->aud) {
-                return false;
-            }
-        } else {
-            return false;
-        }
-
-        $base64_header = $this->encode($headers);
-        $base64_payload = $this->encode($payload);
-
-        $signature = hash_hmac('SHA256', $base64_header . "." . $base64_payload, $this->secret, true);
-        $base64_signature = $this->encode($signature);
-
-        return ($base64_signature === $clientSignature);
+        return $this->decode($jwt) !== null;
     }
 
-    public function is_validTI(string $jwt, int $id): bool //experiment ValidateToken-withID
+    private function sign(string $data): string
     {
-        $token = explode('.', $jwt);
-
-        $payload = base64_decode($token[1]);
-
-        if (isset($payload)) {
-            if (json_decode($payload)->id === $id) {
-
-                return true;
-            }
-
-        }
-        return false;
+        return hash_hmac('sha256', $data, $this->secret, true);
     }
 
-
-
-    public function remove(string $jwt, int $id)
+    private static function base64UrlEncode(string $data): string
     {
-        $token = explode('.', $jwt);
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
 
-        $payload = base64_decode($token[1]);
-
-        if (isset($payload)) {
-            if (json_decode($payload)->id === $id) {
-                json_decode($payload)->exp = time() - 1000;
-            }
-        }
+    private static function base64UrlDecode(string $data): string
+    {
+        $decoded = base64_decode(strtr($data, '-_', '+/'), true);
+        return $decoded === false ? '' : $decoded;
     }
 }
-?>

@@ -1,68 +1,48 @@
-<html>
+<!DOCTYPE html>
+<html lang="de">
 
 <head>
-
-    <link rel="stylesheet" herf="loginstyle.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.1/css/bootstrap.min.css"
-        integrity="sha512-Z/def5z5u2aR89OuzYcxmDJ0Bnd5V1cKqBEbvLOiUNWdg9PQeXVvXLI90SE4QOHGlfLqUnDNVAYyZi8UwUTmWQ=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-        integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
-        integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
-    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Ubuntu">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anmelden | WorkForce</title>
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Ubuntu:400,500,700">
+    <link rel="stylesheet" href="loginstyle.css">
 </head>
 
-<body class="bg-light">
-    <div class="container p-3">
-        <div class="col-lg-6 m-auto d-block p-3 bg-white">
-            <h2 class="pb-3 text-success">
-                Welcome to FairVerify WorkForce
-            </h2>
-            <div id="message"></div>
-            <form method="POST" id="myform" action="api/login">
-                <div class="row">
-                    <div class="form-group col-md-6">
-                        <label for="user1">
-                            Username:
-                        </label>
-                        <input type="text" name="username" id="username" class="form-control">
-                        <span class="error" id="username_err"> </span>
-                    </div>
+<body class="login-page">
+    <main class="login-card">
+        <h1>WorkForce</h1>
+        <p class="subtitle">Zeiterfassung</p>
 
-                    <div class="form-group col-md-6">
-                        <label for="password">
-                            Password:
-                        </label>
-                        <div class="input-group">
-                            <input type="password" name="password" id="password" class="form-control">
-
-                            <span class="input-group-text" onclick="password_show_hide();">
-                                <i class="fas fa-eye" id="show_eye"></i>
-                                <i class="fas fa-eye-slash d-none" id="hide_eye"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <span class="error" id="password_err"> </span>
-                </div>
-
-
-                <br />
-
-                <div class="col-md-12">
-                    <button type="Submit" id="submitbtn" class="btn btn-primary   ">Submit</button>
-                </div>
-
+        <div id="message">
+            <?php if (isset($_GET['error'])): ?>
+                <div class="alert alert-danger">Benutzername oder Passwort ist falsch.</div>
+            <?php elseif (isset($_GET['expired'])): ?>
+                <div class="alert alert-warning">Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.</div>
+            <?php endif; ?>
         </div>
-        <div id="messageafterlogin"></div>
 
+        <form method="POST" id="myform" action="../api/login" novalidate>
+            <div class="field">
+                <label for="username">Benutzername</label>
+                <input type="text" name="username" id="username" autocomplete="username" autofocus>
+                <span class="error" id="username_err"></span>
+            </div>
+
+            <div class="field">
+                <label for="password">Passwort</label>
+                <div class="input-group">
+                    <input type="password" name="password" id="password" autocomplete="current-password">
+                    <button type="button" id="togglePassword" aria-label="Passwort anzeigen">Anzeigen</button>
+                </div>
+                <span class="error" id="password_err"></span>
+            </div>
+
+            <button type="submit" id="submitbtn">Anmelden</button>
         </form>
-    </div>
-    </div>
+    </main>
 
-
+    <script src="JS/validation.js"></script>
 </body>
-<script src="JS/validation.js" type="text/javascript"></script>
 
 </html>

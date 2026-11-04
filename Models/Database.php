@@ -1,190 +1,209 @@
 <?php
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+declare(strict_types=1);
 
+require_once __DIR__ . '/../utils/HttpException.php';
 
-class database
+/**
+ * Thin wrapper around mysqli prepared statements, plus the app's queries.
+ */
+class Database
 {
-
 	protected $connection;
 	protected $query;
-	protected $show_errors = TRUE;
 	protected $query_closed = TRUE;
 	public $query_count = 0;
 
-
-
-
-
-
-	public function checkLogindata($username, $password)
+	public function __construct(array $config)
 	{
-		return ($this->query("select * from Employee where Username=? and Password=?", $username, $password));
+		// Throw mysqli_sql_exception on errors (the default since PHP 8.1, set here explicitly).
+		mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+		$this->connection = new mysqli(
+			$config['host'],
+			$config['user'],
+			$config['password'],
+			$config['name'],
+			$config['port']
+		);
+		$this->connection->set_charset('utf8mb4');
 	}
-	public function getID($username)
+
+	// ---------------------------------------------------------------
+	// Employees
+	// ---------------------------------------------------------------
+
+	public function findEmployeeByUsername(string $username): array
 	{
-		return ($this->query("select id from Employee where Username=? ", $username))->fetchAll();
+		return $this->query(
+			"select id, Username, Password, first_name, is_admin from Employee where Username = ?",
+			$username
+		)->fetchArray();
 	}
 
-	public function logTime(
-		$id,
-		$time,
-		$pause
-
-	) {
-		$date = date("Y-m-d");
-		try {
-			return ($this->query(
-				"insert into Hours (startTime , employee_id) VALUES(?,?)",
-				$time,
-				$id
-			)
-			);
-		} catch (Exception $e) {
-			return ($this->query(
-				"update Hours set endTime=? , pause=?  where employee_id=? and Date_=?",
-				//update Hours set endTime="12:00" , pause=0  where employee_id=1 and Date_="2023-12-19"
-				$time,
-				$pause,
-				$id,
-				$date
-			)
-			);
+	/**
+	 * Contracted hours per week, used for the daily target.
+	 */
+	public function getWeeklyHours(int $id): float
+	{
+		$row = $this->query("select ShouldHours from Employee where id = ?", $id)->fetchArray();
+		if (!$row) {
+			throw new HttpException(404, 'Employee not found');
 		}
-		;
-	}
-	public function editLog(
-		$id,
-		$actual_hours,
-		$start,
-		$end,
-		$overtime,
-		$type,
-		$date,
-		$comment,
-		$pause
-
-	) {
-		try {
-			return ($this->query(
-				"insert into Hours (Actual_hours,type,startTime,endTime,overtime,Komment,pause,employee_id ,Date_) Values(?,?,?,?,?,?,?,?,?) ",
-
-				$actual_hours,
-				$type,
-				$start,
-				$end,
-				$overtime,
-				$comment,
-				$pause,
-				$id,
-				$date
-			)
-			);
-		} catch (Exception $e) {
-			return ($this->query(
-				"update Hours set Actual_hours=?,type=?,startTime=?,endTime=?,overtime=?,Komment=?,pause=? 
-		 where employee_id=? and Date_=?",
-
-				$actual_hours,
-				$type,
-				$start,
-				$end,
-				$overtime,
-				$comment,
-				$pause,
-				$id,
-				$date
-			)
-			);
-		}
+		return (float) $row['ShouldHours'];
 	}
 
-
-	public function getAllUsers()
+	/**
+	 * All employees with their hours and overtime for the given month.
+	 */
+	public function getAllUsers(int $year, int $month): array
 	{
-		return $this->query("select * from Employee")->fetchAll();
-	}
-
-	public function getUserprofile($id)
-	{
-		return ($this->query("select first_name as 'Username', last_name , C.name as 'CompanyName' , 
-		ShouldHours from Employee E 
-		join Company C on C.id=E.Company_id where E.id=?", $id))->fetchAll();
-	}
-	public function getUserDataHour($id)
-	{
-		$date = date("Y-m-d");
-		return ($this->query("select 
-		startTime as 'start',endTime as 'end' ,first_name as 'Username'
-		from Hours H
-		join Employee E on E.id=?
-		where (H.Date_)=? and H.employee_id=? ",
-			$id,
-			$date,
-			$id
-		)
+		return $this->query(
+			"select E.id, E.first_name, E.last_name, E.Username, C.name as CompanyName,
+				E.ShouldHours, E.is_admin,
+				coalesce(round(sum(H.Actual_hours), 2), 0) as MonthHours,
+				coalesce(round(sum(H.overtime), 2), 0) as MonthOvertime
+			from Employee E
+			left join Company C on C.id = E.Company_id
+			left join Hours H on H.employee_id = E.id and year(H.Date_) = ? and month(H.Date_) = ?
+			group by E.id, E.first_name, E.last_name, E.Username, C.name, E.ShouldHours, E.is_admin
+			order by E.is_admin desc, E.last_name, E.first_name",
+			$year,
+			$month
 		)->fetchAll();
 	}
 
-	public function getHoursLogMonth($year, $month, $id)
+	// ---------------------------------------------------------------
+	// Hours
+	// ---------------------------------------------------------------
+
+	/**
+	 * The employee's name, weekly hours and today's clock times (HH:MM:SS, null if not clocked in yet).
+	 */
+	public function getUserDataHour(int $id, string $date): array
 	{
-		return ($this->query("select 
-		startTime as 'Start',endTime as 'End',type ,Komment,
-		Day(Date_) as 'Day' ,pause ,overtime,Actual_hours as 'ActualHours'
-		from Hours 
-		where year(Date_)=? and Month(Date_)=? and employee_id=? ",
+		return $this->query(
+			"select E.first_name as Username, E.ShouldHours,
+				TIME_FORMAT(H.startTime, '%H:%i:%s') as start,
+				TIME_FORMAT(H.endTime, '%H:%i:%s') as end
+			from Employee E
+			left join Hours H on H.employee_id = E.id and H.Date_ = ?
+			where E.id = ?",
+			$date,
+			$id
+		)->fetchArray();
+	}
+
+	public function getDay(int $id, string $date): array
+	{
+		return $this->query(
+			"select TIME_FORMAT(startTime, '%H:%i:%s') as start, TIME_FORMAT(endTime, '%H:%i:%s') as end, pause
+			from Hours where employee_id = ? and Date_ = ?",
+			$id,
+			$date
+		)->fetchArray();
+	}
+
+	public function clockIn(int $id, string $date, string $time): void
+	{
+		$this->query(
+			"insert into Hours (employee_id, Date_, startTime, type) values (?, ?, ?, 'Normal')",
+			$id,
+			$date,
+			$time
+		);
+	}
+
+	public function clockOut(int $id, string $date, string $time, int $pause, float $actualHours, float $overtime): void
+	{
+		$this->query(
+			"update Hours set endTime = ?, pause = ?, Actual_hours = ?, overtime = ?
+			where employee_id = ? and Date_ = ?",
+			$time,
+			$pause,
+			$actualHours,
+			$overtime,
+			$id,
+			$date
+		);
+	}
+
+	/**
+	 * Inserts or replaces one day's entry (one row per employee and day).
+	 */
+	public function editLog(
+		int $id,
+		float $actual_hours,
+		?string $start,
+		?string $end,
+		float $overtime,
+		string $type,
+		string $date,
+		string $comment,
+		int $pause
+	): void {
+		$this->query(
+			"insert into Hours (Actual_hours, type, startTime, endTime, overtime, Komment, pause, employee_id, Date_)
+			values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			on duplicate key update
+				Actual_hours = values(Actual_hours), type = values(type),
+				startTime = values(startTime), endTime = values(endTime),
+				overtime = values(overtime), Komment = values(Komment), pause = values(pause)",
+			$actual_hours,
+			$type,
+			$start,
+			$end,
+			$overtime,
+			$comment,
+			$pause,
+			$id,
+			$date
+		);
+	}
+
+	public function getHoursLogMonth(int $year, int $month, int $id): array
+	{
+		return $this->query(
+			"select
+				TIME_FORMAT(startTime, '%H:%i') as 'Start', TIME_FORMAT(endTime, '%H:%i') as 'End',
+				type, Komment, Day(Date_) as 'Day', pause, overtime, Actual_hours as 'ActualHours'
+			from Hours
+			where year(Date_) = ? and month(Date_) = ? and employee_id = ?
+			order by Date_",
 			$year,
 			$month,
 			$id
-		)
 		)->fetchAll();
 	}
 
-	public function getHoursLogYear($year, $id)
+	/**
+	 * Hours, overtime and paid absence days (vacation, sick, holiday) per month.
+	 * Month is a number (1-12) so the result does not depend on the database's locale.
+	 */
+	public function getHoursLogYear(int $year, int $id): array
 	{
-		$this->query("SET lc_time_names = 'de_DE'");
-		return ($this->query("
-		select 
-		MONTHNAME(Date_) as 'Month', 
-		ROUND(SUM(Actual_hours),2) as 'TotalHours',
-		ROUND(SUM(overtime),2) as 'Overtime'
-		from 
-		Hours 
-		where 
-		YEAR(Date_) = ? AND 
-		employee_id = ?
-group by	MONTH(Date_) ; ",
+		return $this->query(
+			"select
+				MONTH(Date_) as 'Month',
+				ROUND(SUM(Actual_hours), 2) as 'TotalHours',
+				ROUND(SUM(overtime), 2) as 'Overtime',
+				SUM(type in ('Urlaub', 'Krank', 'Feiertag')) as 'AbsenceDays'
+			from Hours
+			where YEAR(Date_) = ? and employee_id = ?
+			group by MONTH(Date_)
+			order by MONTH(Date_)",
 			$year,
 			$id
-		)
 		)->fetchAll();
 	}
 
+	// ---------------------------------------------------------------
+	// Prepared-statement helpers
+	// ---------------------------------------------------------------
 
-
-
-
-
-	public function __construct($dbhost = '127.0.0.1:3306', $dbuser = 'root', $dbpass = '', $dbname = 'AP', $charset = 'utf8')
-	{
-		$this->connection = new mysqli($dbhost, $dbuser, $dbpass, $dbname);
-		if ($this->connection->connect_error) {
-			$this->error('Failed to connect to MySQL :' . $this->connection->connect_error);
-		}
-		$this->connection->set_charset($charset);
-
-	}
-	public function escape($Variable)
-	{
-		return ($this->connection->real_escape_string($Variable));
-	}
-
-
-
-
-
+	/**
+	 * Prepares and runs a query. Extra arguments are bound as parameters.
+	 */
 	public function query($query)
 	{
 		if (!$this->query_closed) {
@@ -223,7 +242,6 @@ group by	MONTH(Date_) ; ",
 		return $this;
 	}
 
-
 	public function fetchAll($callback = null)
 	{
 		$params = array();
@@ -252,6 +270,9 @@ group by	MONTH(Date_) ; ",
 		return $result;
 	}
 
+	/**
+	 * Returns the last row of the result as an associative array, or [] if empty.
+	 */
 	public function fetchArray()
 	{
 		$params = array();
@@ -293,28 +314,21 @@ group by	MONTH(Date_) ; ",
 		return $this->connection->insert_id;
 	}
 
+	/**
+	 * Raises database errors as exceptions. The front controller logs them
+	 * and answers with a generic message, so SQL details never reach the browser.
+	 */
 	public function error($error)
 	{
-		if ($this->show_errors) {
-			exit($error);
-		}
+		throw new RuntimeException($error);
 	}
 
 	private function _gettype($var)
 	{
-		if (is_string($var))
-			return 's';
 		if (is_float($var))
 			return 'd';
-		if (is_int($var))
+		if (is_int($var) || is_bool($var))
 			return 'i';
-		return 'b';
+		return 's'; // strings and null
 	}
-
-
 }
-
-
-
-
-?>

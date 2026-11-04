@@ -17,7 +17,6 @@ function resetAndShowElement(element) {
 
 function animateElement(element,classname) {
     element.classList.add(classname);
-    console.log("whtis")
 
     element.addEventListener('animationend', function() {
         element.style.display = 'none'; 

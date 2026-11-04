@@ -1,21 +1,343 @@
+:root {
+    --accent: #5486b8;
+    --accent-dark: #3d6b99;
+    --nav-bg: #24384d;
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --text: #1f2933;
+    --muted: #6b7785;
+    --border: #dde3ea;
+    --weekend: #f1f4f8;
+    --holiday: #fff4e0;
+    --danger: #c0392b;
+    --success: #2e7d32;
+    --radius: 10px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: 'Ubuntu';
-    
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Ubuntu', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: 64px 1fr;
+    grid-template-areas:
+        "head head"
+        "nav main";
 }
-#body{
-   
+
+h2 {
+    margin: 0 0 16px;
+    font-size: 1.4rem;
 }
+
+h3 {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+}
+
+/* Header and navigation */
 
 .head {
-    
+    grid-area: head;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
 }
-
-
 
 .box1 {
-   
-}
-.box2 {
-   
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--nav-bg);
 }
 
+.box2 {
+    color: var(--muted);
+}
+
+.side-nav {
+    grid-area: nav;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 24px 12px;
+    background: var(--nav-bg);
+}
+
+.menulink {
+    display: block;
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: #e8eef5;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.menulink:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.menulink.active {
+    background: var(--accent);
+    color: #fff;
+}
+
+#contentPlaceholder {
+    grid-area: main;
+    padding: 32px;
+    min-width: 0;
+}
+
+/* Cards and buttons */
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+    max-width: 720px;
+}
+
+button {
+    font: inherit;
+    padding: 9px 18px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+}
+
+button:hover {
+    background: var(--accent-dark);
+}
+
+button.secondary {
+    background: var(--surface);
+    color: var(--accent-dark);
+}
+
+button.secondary:hover {
+    background: #eef3f8;
+}
+
+button.danger {
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+button.small {
+    padding: 4px 10px;
+    font-size: 0.85rem;
+}
+
+input,
+select {
+    font: inherit;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+}
+
+/* Stamp clock */
+
+#timerDisplay {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+    margin: 8px 0 20px;
+}
+
+#timerDisplay.done {
+    display: flex;
+    flex-wrap: wrap;
+    white-space: nowrap;
+    gap: 8px 24px;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--success);
+}
+
+#timerControls {
+    display: flex;
+    gap: 12px;
+}
+
+#MEcomponent {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+#MEcomponent label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+#manualPause {
+    width: 90px;
+}
+
+.message {
+    display: block;
+    margin-top: 16px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: #e8f5e9;
+    color: var(--success);
+}
+
+.message.error {
+    background: #fdecea;
+    color: var(--danger);
+}
+
+.message[hidden] {
+    display: none;
+}
+
+#tableMessage {
+    margin: 0 0 16px;
+}
+
+/* Tables */
+
+.navtracker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+#currentPeriod {
+    min-width: 140px;
+    text-align: center;
+    font-weight: 500;
+}
+
+#toggleView {
+    margin-left: auto;
+}
+
+.work-hours-table-container {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.work-hours-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+.work-hours-table th,
+.work-hours-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.work-hours-table th {
+    position: sticky;
+    top: 0;
+    background: #eef3f8;
+    font-weight: 500;
+}
+
+.work-hours-table tr.weekend td {
+    background: var(--weekend);
+    color: var(--muted);
+}
+
+.work-hours-table tr.holiday td {
+    background: var(--holiday);
+}
+
+.holiday-name {
+    display: block;
+    font-size: 0.75rem;
+    color: #8a5a00;
+}
+
+.work-hours-table tr.saved td {
+    background: #e8f5e9;
+    transition: background 0.3s;
+}
+
+.work-hours-table tr.save-error td {
+    background: #fdecea;
+}
+
+.work-hours-table .total-row td {
+    font-weight: 700;
+    background: #eef3f8;
+    border-bottom: none;
+}
+
+.work-hours-table td.negative {
+    color: var(--danger);
+}
+
+.work-hours-table input[type="number"] {
+    width: 80px;
+}
+
+.work-hours-table input[type="text"] {
+    width: 160px;
+}
+
+/* Small screens: navigation on top */
+
+@media (max-width: 760px) {
+    body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr;
+        grid-template-areas:
+            "head"
+            "nav"
+            "main";
+    }
+
+    .head {
+        padding: 12px 16px;
+    }
+
+    .side-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: 8px 16px;
+    }
+
+    #contentPlaceholder {
+        padding: 16px;
+    }
+
+    #timerDisplay {
+        font-size: 2.2rem;
+    }
+
+    #toggleView {
+        margin-left: 0;
+    }
+}

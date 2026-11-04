@@ -3,16 +3,19 @@ import { updateYearlyView, initializeYearlyView } from './YearlyHours.js';
 
 export let currentYear = new Date().getFullYear();
 export let currentMonth = new Date().getMonth() + 1;
-export let currentday = new Date().getDay();
-export let currentdate = new Date();
 
+// Contracted hours per week, loaded with the employee's data on the home view.
+export let weeklyHours = 40;
 
 export let isYearlyView = false;
 
-
+export function setWeeklyHours(hours) {
+    if (Number.isFinite(hours) && hours > 0) {
+        weeklyHours = hours;
+    }
+}
 
 export function initializeView() {
-
     if (isYearlyView) {
         initializeYearlyView();
     } else {
@@ -36,12 +39,22 @@ export function attachEventListeners() {
 
 function toggleViewYear() {
     isYearlyView = !isYearlyView;
+    updateToggleLabel();
     initializeView();
 }
+
 export function toggleViewMonth(month) {
-    currentMonth = month
-    isYearlyView = !isYearlyView;
+    currentMonth = month;
+    isYearlyView = false;
+    updateToggleLabel();
     initializeView();
+}
+
+function updateToggleLabel() {
+    const button = document.getElementById('toggleView');
+    if (button) {
+        button.textContent = isYearlyView ? 'Monatsansicht' : 'Jahresansicht';
+    }
 }
 
 function changeDate(delta) {
@@ -69,25 +82,21 @@ function changeYear(delta) {
     updateYearlyView();
 }
 
-
+export function setActiveNav(id) {
+    document.querySelectorAll('.menulink').forEach((link) => {
+        link.classList.toggle('active', link.id === id);
+    });
+}
 
 export function createWorkHoursView() {
-    const navbutton = document.getElementById('homeLink');
-    navbutton.style.backgroundColor = "";
-    const navbutton2 = document.getElementById('zeiterfassungLink');
-    navbutton2.style.backgroundColor = "#5486B8";
-
-
-
-
+    setActiveNav('zeiterfassungLink');
 
     const container = document.getElementById('contentPlaceholder');
-    container.className = 'container'
+    container.className = 'container';
     container.innerHTML = '';
 
-
     const titleDiv = document.createElement('div');
-    const title = document.createElement('h3');
+    const title = document.createElement('h2');
     title.id = 'Title';
     titleDiv.appendChild(title);
     container.appendChild(titleDiv);
@@ -96,9 +105,10 @@ export function createWorkHoursView() {
     navDiv.id = 'nav';
     navDiv.className = 'navtracker';
 
-    const prevButton = createButton('prevbutton', 'Previous');
-    const nextButton = createButton('nextbutton', 'Next');
-    const toggleViewButton = createButton('toggleView', 'Toggle Year/Month View');
+    const prevButton = createButton('prevbutton', '‹ Zurück');
+    const nextButton = createButton('nextbutton', 'Weiter ›');
+    const toggleViewButton = createButton('toggleView', isYearlyView ? 'Monatsansicht' : 'Jahresansicht');
+    toggleViewButton.classList.add('secondary');
 
     const currentPeriodSpan = document.createElement('span');
     currentPeriodSpan.id = 'currentPeriod';
@@ -108,6 +118,12 @@ export function createWorkHoursView() {
     navDiv.appendChild(nextButton);
     navDiv.appendChild(toggleViewButton);
     container.appendChild(navDiv);
+
+    const message = document.createElement('div');
+    message.id = 'tableMessage';
+    message.className = 'message';
+    message.hidden = true;
+    container.appendChild(message);
 
     const workHoursContainer = document.createElement('div');
     workHoursContainer.className = 'work-hours-table-container';
@@ -119,10 +135,26 @@ export function createWorkHoursView() {
     container.appendChild(workHoursContainer);
 }
 
+/** Shows a short status or error message above the table. */
+export function showTableMessage(text, isError = false) {
+    const message = document.getElementById('tableMessage');
+    if (!message) {
+        return;
+    }
+    message.textContent = text;
+    message.classList.toggle('error', isError);
+    message.hidden = false;
+    clearTimeout(showTableMessage.timer);
+    showTableMessage.timer = setTimeout(() => { message.hidden = true; }, 4000);
+}
+
+export function formatHours(value) {
+    return Number(value || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function createButton(id, text) {
     const button = document.createElement('button');
     button.id = id;
     button.textContent = text;
     return button;
 }
-

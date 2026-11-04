@@ -1,69 +1,43 @@
-$(document).ready(function () {
-    $('#username').on('input', function () {
-        checkuser();
-    });
-    $('#password').on('input', function () {
-        checkpass();
-    });
+// Login form checks. Plain JavaScript, so the page works without any CDN.
 
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('myform');
+    const username = document.getElementById('username');
+    const password = document.getElementById('password');
 
-    $('#submitbtn').click(function () {
+    username.addEventListener('input', checkuser);
+    password.addEventListener('input', checkpass);
+    document.getElementById('togglePassword').addEventListener('click', password_show_hide);
 
-
-        if (!checkuser() && !checkpass()) {
-            console.log("er1");
-            $("#message").html(`<div class="alert alert-warning">Please fill all required field</div>`);
-        } else if (!checkuser() || !checkpass()) {
-            $("#message").html(`<div class="alert alert-warning">Please fill all required field</div>`);
-            console.log("er");
-        }
-        else {
-            console.log("ok");
-            $("#message").html("");
-            var form = $('#myform')[0];
-            var data = new FormData(form);
-           
+    // Stop the form from being sent when a field is empty or invalid.
+    form.addEventListener('submit', (event) => {
+        const userOk = checkuser();
+        const passOk = checkpass();
+        if (!userOk || !passOk) {
+            event.preventDefault();
+            document.getElementById('message').innerHTML =
+                '<div class="alert alert-warning">Bitte alle Felder ausfüllen.</div>';
         }
     });
 });
 
-
 function checkuser() {
-    var pattern = /^[A-Za-z0-9]+$/;
-    var user = $('#username').val();
-    var validuser = pattern.test(user);
-
-    if (!validuser) {
-        $('#username_err').html('OHOH !!');
-        return false;
-    } else {
-        $('#username_err').html('');
-        return true;
-    }
+    const validuser = /^[A-Za-z0-9]+$/.test(document.getElementById('username').value);
+    document.getElementById('username_err').textContent = validuser ? '' : 'Nur Buchstaben und Ziffern erlaubt.';
+    return validuser;
 }
 
 function checkpass() {
-   
-    return true;
-
+    const validpass = document.getElementById('password').value.length > 0;
+    document.getElementById('password_err').textContent = validpass ? '' : 'Bitte Passwort eingeben.';
+    return validpass;
 }
 
-
-
-
 function password_show_hide() {
-    console.log('ok');
-    var x = document.getElementById("password");
-    var show_eye = document.getElementById("show_eye");
-    var hide_eye = document.getElementById("hide_eye");
-    hide_eye.classList.remove("d-none");
-    if (x.type === "password") {
-        x.type = "text";
-        show_eye.style.display = "none";
-        hide_eye.style.display = "block";
-    } else {
-        x.type = "password";
-        show_eye.style.display = "block";
-        hide_eye.style.display = "none";
-    }
+    const password = document.getElementById('password');
+    const toggle = document.getElementById('togglePassword');
+    const show = password.type === 'password';
+    password.type = show ? 'text' : 'password';
+    toggle.textContent = show ? 'Verbergen' : 'Anzeigen';
+    toggle.setAttribute('aria-label', show ? 'Passwort verbergen' : 'Passwort anzeigen');
 }

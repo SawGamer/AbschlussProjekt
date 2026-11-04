@@ -1,17 +1,13 @@
 <?php
 
+// JWT settings. Set JWT_SECRET in the environment for any shared or public deployment.
 $jwtConfig = [
-
-    "header" => [
-        'alg' => 'HS256',
-        // SHA256 algorithm
+    'header' => [
+        'alg' => 'HS256', // HMAC with SHA-256
         'typ' => 'JWT',
-        'iss' => 'jwt.Fair',
-        // token issuer
-        'aud' => 'Fair.com'
     ],
-
-    "secret" => 'thisIsASecret' // change this to your secret code 
+    'issuer' => 'workforce',
+    'audience' => 'workforce-app',
+    'ttl' => 8 * 60 * 60, // valid for one working day
+    'secret' => getenv('JWT_SECRET') ?: 'local-development-secret-change-me',
 ];
-
-?>

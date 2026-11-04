@@ -1,153 +1,115 @@
-import { isfeiertag } from '../../../Config/feiertage.js';
-import { currentYear, currentday, currentMonth, currentdate, toggleViewMonth } from './Main.js';
-import { getDaysInMonth } from './MonthlyHours.js';
+import { currentYear, weeklyHours, toggleViewMonth, showTableMessage, formatHours } from './Main.js';
+import { apiFetch } from './Authentication.js';
+import { getDaysInMonth, targetHours } from './worktime.js';
 
 const urlParams = new URLSearchParams(window.location.search);
 const userId = urlParams.get('id');
-let diff = 0
 
-let usersollstunden
 export function initializeYearlyView() {
-    updateYearLabel();
-    request2(currentYear);
+    updateYearlyView();
 }
 
 export function updateYearlyView() {
     updateYearLabel();
-    request2(currentYear);
+    loadYear(currentYear);
 }
 
 function updateYearLabel() {
-    document.getElementById("currentPeriod").innerText = `Jahr: ${currentYear}`;
-    title();
+    document.getElementById("currentPeriod").textContent = `Jahr ${currentYear}`;
+    document.getElementById("Title").textContent = `Jahresübersicht: ${currentYear}`;
 }
 
-function title() {
-    const title = document.getElementById("Title");
-    title.textContent = "Jahresübersicht die Arbeitsstunden für " + currentYear;
+async function loadYear(year) {
+    try {
+        generateYearlySummaryTable(await apiFetch(`api/user/hours?year=${year}&id=${encodeURIComponent(userId)}`));
+    } catch (error) {
+        generateYearlySummaryTable([]);
+        showTableMessage(`Daten konnten nicht geladen werden: ${error.message}`, true);
+    }
 }
-
-
-
-const request1 = async () => {
-    const token = sessionStorage.getItem('jwt')
-    fetch(`api/user/getUserprofile?id=${userId}`, {
-        headers: {
-            'Authorization': `${token}`,
-        }
-    }).then(response => response.json())
-        .then(data => {
-
-            usersollstunden = data['ShouldHours']
-        })
-}
-
-const request2 = async (year) => {
-    const token = sessionStorage.getItem('jwt')
-
-    fetch(`api/user/LogView?year=${year}&id=${userId}`, {
-        headers: {
-            'Authorization': `${token}`,
-        }
-    }).then(response => response.json())
-        .then(data => generateYearlySummaryTable(data))
-        .catch(error => {
-            console.error(error);
-            generateYearlySummaryTable()
-        });
-
-}
-
-
-
 
 function generateYearlySummaryTable(data) {
     const table = document.getElementById("workHoursTable");
     table.innerHTML = "";
-    table.className = "work-hours-table";
+    table.className = "work-hours-table yearly";
 
-
-    const headers = ["Monatsname", "Soll Stunden", "Ist Stunden", "Differenz", "Überstunden", "Bearbeiten"];
-    const headerRow = table.insertRow();
+    const headers = ["Monat", "Soll-Stunden", "Ist-Stunden", "Differenz", "Überstunden", ""];
+    const headerRow = table.createTHead().insertRow();
     headerRow.className = "table-header-row";
-
     headers.forEach(headerText => {
         const header = document.createElement("th");
-        header.appendChild(document.createTextNode(headerText));
-        headerRow.appendChild(header);
         header.className = "table-header";
-
+        header.textContent = headerText;
+        headerRow.appendChild(header);
     });
 
-    for (let month = 0; month < 12; month++) {
+    const byMonth = new Map(data.map((entry) => [Number(entry.Month), entry]));
+    const totals = { target: 0, elapsedTarget: 0, actual: 0, overtime: 0 };
+    const body = table.createTBody();
+    const today = new Date();
 
-        const row = table.insertRow();
+    for (let month = 1; month <= 12; month++) {
+        const entry = byMonth.get(month);
+        // Vacation, sick and holiday entries are credited, so they lower the target.
+        const credit = Number(entry?.AbsenceDays ?? 0) * dailyTarget();
+        const target = Math.max(monthlyTarget(month) - credit, 0);
+        const elapsedTarget = Math.max(monthlyTarget(month, today) - credit, 0); // only days up to today count
+        const actual = Number(entry?.TotalHours ?? 0);
+        const overtime = Number(entry?.Overtime ?? 0);
+        const isFuture = new Date(currentYear, month - 1, 1) > today;
+        totals.target += target;
+        totals.elapsedTarget += elapsedTarget;
+        totals.actual += actual;
+        totals.overtime += overtime;
 
-        const monthNameCell = row.insertCell(0);
+        const row = body.insertRow();
+        row.insertCell().textContent = new Date(currentYear, month - 1).toLocaleString("de-DE", { month: "long" });
+        row.insertCell().textContent = formatHours(target);
+        row.insertCell().textContent = formatHours(actual);
+        const differenceCell = row.insertCell();
+        if (isFuture) {
+            differenceCell.textContent = '–';
+        } else {
+            const difference = actual - elapsedTarget;
+            differenceCell.textContent = formatHours(difference);
+            differenceCell.className = difference < 0 ? 'negative' : 'positive';
+        }
+        row.insertCell().textContent = formatHours(overtime);
 
-        monthNameCell.textContent = new Date(currentYear, month).toLocaleString("de-DE", { month: "long" });
-
-
-        // Add cells for Soll Stunden, Ist Stunden, Differenz, Überstunden
-        const sollStundenCell = row.insertCell(1);
-        sollStundenCell.innerHTML = sollJährlichStunden(month)
-
-        const istStundenCell = row.insertCell(2);
-        istStundenCell.innerHTML = 0
-
-
-
-
-        const differenzCell = row.insertCell(3);
-
-
-
-        const ueberstundenCell = row.insertCell(4);
-        ueberstundenCell.innerHTML = 0
-
-
-        data.map(x => {
-            if (x['Month'] === monthNameCell.textContent) {
-                istStundenCell.innerHTML = Number(x['TotalHours']).toFixed(2)
-                ueberstundenCell.innerHTML = Number(x['Overtime']).toFixed(2)
-            }
-        })
-        const d = Number(istStundenCell.innerHTML - sollStundenCell.innerHTML)
-        differenzCell.innerHTML = d
-
-
-
-        const editCell = row.insertCell(5);
         const editButton = document.createElement("button");
         editButton.textContent = "Bearbeiten";
-        editButton.onclick = function () {
-            toggleViewMonth(month + 1)
-        };
-        editCell.appendChild(editButton);
+        editButton.className = 'secondary small';
+        editButton.addEventListener('click', () => toggleViewMonth(month));
+        row.insertCell().appendChild(editButton);
     }
+
+    const footer = table.createTFoot().insertRow();
+    footer.className = 'total-row';
+    footer.insertCell().textContent = 'Summe';
+    footer.insertCell().textContent = formatHours(totals.target);
+    footer.insertCell().textContent = formatHours(totals.actual);
+    footer.insertCell().textContent = formatHours(totals.actual - totals.elapsedTarget);
+    footer.insertCell().textContent = formatHours(totals.overtime);
+    footer.insertCell();
 }
 
-function sollJährlichStunden(monat) {
-    const options = { weekday: "long" };
+/** Target hours of a normal working day, for example 8 for 40 hours per week. */
+function dailyTarget() {
+    return targetHours(new Date(2024, 0, 2), weeklyHours); // 2 January 2024 was a regular Tuesday
+}
 
-    let off = 0
-    for (let i = 1; i <= getDaysInMonth(currentYear, monat + 1); i++) {
-
-        const daytag = new Date(currentYear, monat, i)
-        const day = new Intl.DateTimeFormat("de-DE", options).format(daytag)
-            ;
-        const dateofrow = new Date(
-            currentYear
-            + "-" +
-            (Number(monat + 1) < 10 ? "0" + Number(monat + 1) : Number(monat + 1))
-            + "-" +
-            (i < 10 ? "0" + i : i))
-
-        if (day === "Sonntag" || day === "Samstag" || isfeiertag(dateofrow)) {
-            off += 1
+/**
+ * Target hours for a month: working days times the daily target.
+ * With `until`, only days up to and including that date are counted.
+ */
+function monthlyTarget(month, until = null) {
+    let target = 0;
+    for (let day = 1; day <= getDaysInMonth(currentYear, month); day++) {
+        const date = new Date(currentYear, month - 1, day);
+        if (until && date > until) {
+            break;
         }
-
+        target += targetHours(date, weeklyHours);
     }
-    return ((getDaysInMonth(currentYear, monat + 1) * 8) - (off * 8))
-
+    return target;
 }

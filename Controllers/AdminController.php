@@ -1,28 +1,25 @@
 <?php
 
-require_once('../Models/Database.php');
+declare(strict_types=1);
+
+require_once __DIR__ . '/../Models/Database.php';
+require_once __DIR__ . '/../utils/HelperFunctions.php';
 
 class AdminController
 {
-    private $database;
+    private Database $database;
 
-    public function __construct($database)
+    public function __construct(Database $database)
     {
         $this->database = $database;
     }
 
-    public function getAllUsers()
+    /**
+     * All employees with this month's hours. Password hashes are never selected.
+     */
+    public function getAllUsers(): void
     {
-        $allUsers = $this->database->getAllUsers();
-
-        header('Content-Type: application/json');
-        echo json_encode($allUsers);
-    }
-
-    public function LogOut()
-    {
-        session_unset();
-        header("location:../public/views/logout.php");
-
+        $users = $this->database->getAllUsers((int) date('Y'), (int) date('n'));
+        HelperFunctions::json($users);
     }
 }
