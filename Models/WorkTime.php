@@ -13,6 +13,9 @@ final class WorkTime
     public const DEFAULT_WEEKLY_HOURS = 40.0;
     public const WORKING_DAYS_PER_WEEK = 5;
 
+    /** Day types that are credited instead of counting as missing hours. */
+    public const ABSENCE_TYPES = ['Urlaub', 'Krank', 'Feiertag'];
+
     /**
      * Hours worked between start and end (HH:MM) minus the break.
      * An end time before the start time counts as a shift past midnight.
@@ -49,6 +52,59 @@ final class WorkTime
     public static function overtime(float $actualHours, DateTimeInterface $date, float $weeklyHours = self::DEFAULT_WEEKLY_HOURS): float
     {
         return round(max($actualHours - self::targetHours($date, $weeklyHours), 0), 2);
+    }
+
+    /**
+     * Working days (weekdays that are not holidays) from $from to $to, inclusive.
+     *
+     * @return DateTimeImmutable[]
+     */
+    public static function workingDays(DateTimeInterface $from, DateTimeInterface $to): array
+    {
+        $days = [];
+        $day = DateTimeImmutable::createFromInterface($from)->setTime(0, 0);
+        $last = DateTimeImmutable::createFromInterface($to)->setTime(0, 0);
+        for (; $day <= $last; $day = $day->modify('+1 day')) {
+            if (self::targetHours($day) > 0) {
+                $days[] = $day;
+            }
+        }
+        return $days;
+    }
+
+    /**
+     * Balance for a date range: hours worked against the target.
+     * Vacation, sick and holiday entries on working days are credited,
+     * so they do not count as missing hours.
+     *
+     * @param array<string, array{actual: float, type: ?string}> $entries keyed by Y-m-d
+     * @return array{actual: float, target: float, difference: float, absence_days: int}
+     */
+    public static function balance(array $entries, DateTimeInterface $from, DateTimeInterface $to, float $weeklyHours): array
+    {
+        $actual = 0.0;
+        $target = 0.0;
+        $absenceDays = 0;
+
+        $day = DateTimeImmutable::createFromInterface($from)->setTime(0, 0);
+        $last = DateTimeImmutable::createFromInterface($to)->setTime(0, 0);
+        for (; $day <= $last; $day = $day->modify('+1 day')) {
+            $entry = $entries[$day->format('Y-m-d')] ?? null;
+            $dayTarget = self::targetHours($day, $weeklyHours);
+            if ($entry !== null && $dayTarget > 0 && in_array($entry['type'], self::ABSENCE_TYPES, true)) {
+                $absenceDays++;
+                $dayTarget = 0.0;
+            }
+            $target += $dayTarget;
+            $actual += (float) ($entry['actual'] ?? 0);
+        }
+
+        return [
+            'actual' => round($actual, 2),
+            'target' => round($target, 2),
+            'difference' => round($actual - $target, 2),
+            'absence_days' => $absenceDays,
+        ];
     }
 
     /**
