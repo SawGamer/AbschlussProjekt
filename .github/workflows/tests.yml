@@ -38,3 +38,29 @@ jobs:
 
       - name: Seed demo data
         run: php database/seed.php
+
+      - name: Start the app
+        run: |
+          php -S 127.0.0.1:8000 -t public public/router.php > server.log 2>&1 &
+          for i in $(seq 1 20); do curl -fs -o /dev/null http://127.0.0.1:8000/views/login.php && exit 0; sleep 0.5; done
+          exit 1
+
+      - name: API integration tests
+        run: php tests/api.php
+
+      - name: Reset demo data for the browser tests
+        run: |
+          mysql -h 127.0.0.1 -uroot < database/schema.sql
+          php database/seed.php
+
+      - name: Install Playwright with Chromium
+        run: |
+          npm install --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: node tests/e2e.js
+
+      - name: Server log
+        if: always()
+        run: cat server.log

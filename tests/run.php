@@ -124,6 +124,49 @@ $status = static function (Router $router, string $method, string $path): ?int {
 check('unknown path is 404', 404, $status($router, 'GET', '/api/missing'));
 check('wrong method is 405', 405, @$status($router, 'DELETE', '/api/ping'));
 
+$router->patch('/api/employees/{id}/leave/{requestId}', function (array $params) use (&$hits) { $hits[] = $params; });
+$router->dispatch('PATCH', '/api/employees/12/leave/7');
+check('router passes numeric placeholders', ['id' => 12, 'requestId' => 7], end($hits));
+check('placeholders only match numbers', 404, $status($router, 'PATCH', '/api/employees/abc/leave/7'));
+
+// --- Working days and balance ----------------------------------------
+
+$days = WorkTime::workingDays(new DateTimeImmutable('2026-12-21'), new DateTimeImmutable('2026-12-27'));
+check('working days skip Christmas and the weekend', ['2026-12-21', '2026-12-22', '2026-12-23', '2026-12-24'],
+    array_map(static fn($d) => $d->format('Y-m-d'), $days));
+
+$week = [
+    '2026-11-02' => ['actual' => 8.5, 'type' => 'Normal'],
+    '2026-11-03' => ['actual' => 7.0, 'type' => 'Normal'],
+    '2026-11-04' => ['actual' => 0.0, 'type' => 'Urlaub'],
+    '2026-11-05' => ['actual' => 0.0, 'type' => 'Krank'],
+    // Friday missing: counts as 8 missing hours
+];
+$balance = WorkTime::balance($week, new DateTimeImmutable('2026-11-02'), new DateTimeImmutable('2026-11-08'), 40.0);
+check('balance credits vacation and sick days', ['actual' => 15.5, 'target' => 24.0, 'difference' => -8.5, 'absence_days' => 2], $balance);
+
+// --- Day state ---------------------------------------------------------
+
+require_once $root . '/Models/DayState.php';
+check('no entry is idle', 'idle', DayState::build(null, [], '10:00:00')['status']);
+check('vacation entry is absent', 'absent', DayState::build(['start' => null, 'type' => 'Urlaub'], [], '10:00:00')['status']);
+
+$working = DayState::build(['start' => '08:00:00', 'end' => null], [['start' => '12:00:00', 'end' => '12:30:00']], '14:00:00');
+check('working: time so far minus the break', ['working', 30, 5.5], [$working['status'], $working['pause_minutes'], $working['worked_hours']]);
+
+$paused = DayState::build(['start' => '08:00:00', 'end' => null], [['start' => '12:00:00', 'end' => null]], '12:15:00');
+check('paused: running break counts', ['paused', '12:00:00', 15, 4.0], [$paused['status'], $paused['break_started'], $paused['pause_minutes'], $paused['worked_hours']]);
+
+$done = DayState::build(['start' => '08:00:00', 'end' => '16:30:00', 'pause' => 30, 'actual_hours' => '8.00'], [], '18:00:00');
+check('done: stored hours win', ['done', 8.0], [$done['status'], $done['worked_hours']]);
+check('break minutes round to the nearest minute', 31, DayState::breakMinutes([['start' => '12:00:00', 'end' => '12:30:40']], '13:00:00'));
+
+// --- CSV export safety -------------------------------------------------
+
+require_once $root . '/Controllers/UserController.php';
+check('formula cells are neutralised', ["'=SUM(A1)", "'+49 170", "'-1", "'@cmd", 'Urlaub'],
+    array_map([UserController::class, 'csvSafe'], ['=SUM(A1)', '+49 170', '-1', '@cmd', 'Urlaub']));
+
 // --------------------------------------------------------------------
 
 echo $failures === 0 ? "OK  $passed checks passed\n" : "\n$failures failed, $passed passed\n";
