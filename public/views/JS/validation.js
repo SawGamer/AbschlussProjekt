@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!userOk || !passOk) {
             event.preventDefault();
             document.getElementById('message').innerHTML =
-                '<div class="alert alert-warning">Bitte alle Felder ausfüllen.</div>';
+                '<div class="message error">Bitte alle Felder ausfüllen.</div>';
         }
     });
 });

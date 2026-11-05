@@ -1,9 +1,6 @@
-import { currentYear, currentMonth, weeklyHours, showTableMessage, formatHours } from './Main.js';
+import { currentYear, currentMonth, weeklyHours, subjectId, showTableMessage, formatHours } from './Main.js';
 import { apiFetch } from './Authentication.js';
 import { getDaysInMonth, holidayName, isWeekend, targetHours } from './worktime.js';
-
-const urlParams = new URLSearchParams(window.location.search);
-const userId = urlParams.get('id');
 
 const DAY_TYPES = ["", "FehlTag", "Normal", "Urlaub", "Krank", "Feiertag", "Wochenende", "Notfall"];
 const DEFAULT_PAUSE_MINUTES = 30;
@@ -14,13 +11,12 @@ export function initializeMonthlyView() {
 
 export function updateMonthlyView() {
     updateMonthLabel();
-    fetchDataFromAPI(currentYear, currentMonth, userId);
+    fetchDataFromAPI(currentYear, currentMonth, subjectId);
 }
 
 function updateMonthLabel() {
     const label = new Date(currentYear, currentMonth - 1).toLocaleString('de-DE', { month: 'long', year: 'numeric' });
     document.getElementById("currentPeriod").textContent = label;
-    document.getElementById("Title").textContent = `Monatsübersicht: ${label}`;
 }
 
 async function fetchDataFromAPI(year, month, employeeId) {
@@ -81,7 +77,9 @@ function generateMonthlySummaryTable(data) {
         pause.min = 0;
         pause.max = 1440;
         pause.step = 1;
-        pause.value = entry ? entry.pause : (targetHours(date, weeklyHours) > 0 ? DEFAULT_PAUSE_MINUTES : 0);
+        // Days without an entry show the usual break as a placeholder; it applies once times are entered.
+        pause.value = entry ? entry.pause : '';
+        if (!entry && targetHours(date, weeklyHours) > 0) pause.placeholder = String(DEFAULT_PAUSE_MINUTES);
         pause.addEventListener('keyup', () => enforceMinMax(pause));
 
         const overtime = document.createElement('span');
@@ -134,11 +132,11 @@ async function updateAndSave(row) {
         const result = await apiFetch('api/user/hours', {
             method: 'POST',
             body: {
-                id: userId,
+                id: subjectId,
                 date: `${currentYear}-${pad(currentMonth)}-${pad(day)}`,
                 start_time: start.value,
                 end_time: end.value,
-                pause: Number(pause.value || 0),
+                pause: pause.value === '' ? Number(pause.placeholder || 0) * (start.value && end.value ? 1 : 0) : Number(pause.value),
                 type: kind.value,
                 comment: comment.value,
             },

@@ -1,28 +1,33 @@
-<?php $base = rtrim(dirname($_SERVER['SCRIPT_NAME'], 2), '/\\') . '/'; ?>
+<?php
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME'], 2), '/\\') . '/';
+// Links to #/routes must name this page, because <base> points elsewhere.
+$self = htmlspecialchars(strtok($_SERVER['REQUEST_URI'], '#'));
+$title = 'Zeiterfassung';
+?>
 <!DOCTYPE html>
 <html lang="de">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <base href="<?= htmlspecialchars($base) ?>" />
-    <title>Zeiterfassung | WorkForce</title>
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Ubuntu:400,500,700">
-    <link rel="stylesheet" href="views/styling.css">
-    <link rel="stylesheet" href="views/animating.css">
+<?php include __DIR__ . '/partials/head.php'; ?>
 </head>
 
 <body>
-    <nav id="info" class="head">
-        <div class="box1">WorkForce</div>
-        <div id="name" class="box2">Willkommen zurück</div>
+    <nav class="side-nav" aria-label="Hauptmenü">
+        <div class="brand">WorkForce <small>Zeiterfassung</small></div>
+        <a class="menulink" data-route="uebersicht" href="<?= $self ?>#/uebersicht">Übersicht</a>
+        <a class="menulink" data-route="zeiten" href="<?= $self ?>#/zeiten">Zeiten</a>
+        <a class="menulink" data-route="urlaub" href="<?= $self ?>#/urlaub">Urlaub</a>
+        <a class="menulink" data-route="konto" href="<?= $self ?>#/konto">Konto</a>
+
+        <div class="nav-footer">
+            <div class="nav-user">Angemeldet als <strong id="navName"></strong></div>
+            <a id="adminLink" class="menulink" href="views/admin_view.php" hidden>Zum Admin-Bereich</a>
+            <button id="themeButton" class="menulink nav-button" type="button">Darstellung</button>
+            <button id="logout" class="menulink nav-button" type="button">Abmelden</button>
+        </div>
     </nav>
-    <nav class="side-nav">
-        <a id="homeLink" class="menulink" href="javascript:void(0)">Stempeluhr</a>
-        <a id="zeiterfassungLink" class="menulink" href="javascript:void(0)">Zeiterfassung</a>
-        <a id="logout" class="menulink" href="javascript:void(0)">Abmelden</a>
-    </nav>
-    <main id="contentPlaceholder"></main>
+
+    <main id="contentPlaceholder" tabindex="-1"></main>
 
     <script type="module" src="views/JS/navHandler.js"></script>
 </body>

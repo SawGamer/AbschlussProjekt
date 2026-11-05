@@ -71,6 +71,17 @@ export function targetHours(date, weeklyHours = DEFAULT_WEEKLY_HOURS) {
     return Math.round((weeklyHours / WORKING_DAYS_PER_WEEK) * 100) / 100;
 }
 
+/** Number of working days from one ISO date to another, inclusive. */
+export function countWorkingDays(fromIso, toIso) {
+    const from = new Date(`${fromIso}T00:00:00`);
+    const to = new Date(`${toIso}T00:00:00`);
+    let count = 0;
+    for (const day = new Date(from); day <= to; day.setDate(day.getDate() + 1)) {
+        if (!isWeekend(day) && !holidayName(day)) count++;
+    }
+    return count;
+}
+
 /** Days in a month; month is 1-12. */
 export function getDaysInMonth(year, month) {
     return new Date(year, month, 0).getDate();

@@ -1,39 +1,34 @@
-import { currentYear, weeklyHours, toggleViewMonth, showTableMessage, formatHours } from './Main.js';
+import { currentYear, subjectId, toggleViewMonth, showTableMessage, formatHours } from './Main.js';
 import { apiFetch } from './Authentication.js';
-import { getDaysInMonth, targetHours } from './worktime.js';
-
-const urlParams = new URLSearchParams(window.location.search);
-const userId = urlParams.get('id');
 
 export function initializeYearlyView() {
     updateYearlyView();
 }
 
 export function updateYearlyView() {
-    updateYearLabel();
-    loadYear(currentYear);
-}
-
-function updateYearLabel() {
     document.getElementById("currentPeriod").textContent = `Jahr ${currentYear}`;
-    document.getElementById("Title").textContent = `Jahresübersicht: ${currentYear}`;
+    loadYear(currentYear);
 }
 
 async function loadYear(year) {
     try {
-        generateYearlySummaryTable(await apiFetch(`api/user/hours?year=${year}&id=${encodeURIComponent(userId)}`));
+        generateYearlySummaryTable(await apiFetch(`api/user/hours?year=${year}&id=${encodeURIComponent(subjectId)}`));
     } catch (error) {
         generateYearlySummaryTable([]);
         showTableMessage(`Daten konnten nicht geladen werden: ${error.message}`, true);
     }
 }
 
+/**
+ * The server sends, per month, the hours, overtime and two targets: for the whole
+ * month and up to today. Vacation, sick and holiday days are already credited.
+ */
 function generateYearlySummaryTable(data) {
     const table = document.getElementById("workHoursTable");
     table.innerHTML = "";
     table.className = "work-hours-table yearly";
 
-    const headers = ["Monat", "Soll-Stunden", "Ist-Stunden", "Differenz", "Überstunden", ""];
+    const headers = ["Monat", "Soll-Stunden", "Ist-Stunden", "Differenz bis heute", "Überstunden", ""];
     const headerRow = table.createTHead().insertRow();
     headerRow.className = "table-header-row";
     headers.forEach(headerText => {
@@ -44,21 +39,19 @@ function generateYearlySummaryTable(data) {
     });
 
     const byMonth = new Map(data.map((entry) => [Number(entry.Month), entry]));
-    const totals = { target: 0, elapsedTarget: 0, actual: 0, overtime: 0 };
+    const totals = { target: 0, toDate: 0, actual: 0, overtime: 0 };
     const body = table.createTBody();
     const today = new Date();
 
     for (let month = 1; month <= 12; month++) {
-        const entry = byMonth.get(month);
-        // Vacation, sick and holiday entries are credited, so they lower the target.
-        const credit = Number(entry?.AbsenceDays ?? 0) * dailyTarget();
-        const target = Math.max(monthlyTarget(month) - credit, 0);
-        const elapsedTarget = Math.max(monthlyTarget(month, today) - credit, 0); // only days up to today count
-        const actual = Number(entry?.TotalHours ?? 0);
-        const overtime = Number(entry?.Overtime ?? 0);
+        const entry = byMonth.get(month) ?? {};
+        const target = Number(entry.Target ?? 0);
+        const targetToDate = Number(entry.TargetToDate ?? 0);
+        const actual = Number(entry.TotalHours ?? 0);
+        const overtime = Number(entry.Overtime ?? 0);
         const isFuture = new Date(currentYear, month - 1, 1) > today;
         totals.target += target;
-        totals.elapsedTarget += elapsedTarget;
+        totals.toDate += targetToDate;
         totals.actual += actual;
         totals.overtime += overtime;
 
@@ -70,46 +63,27 @@ function generateYearlySummaryTable(data) {
         if (isFuture) {
             differenceCell.textContent = '–';
         } else {
-            const difference = actual - elapsedTarget;
-            differenceCell.textContent = formatHours(difference);
+            const difference = actual - targetToDate;
+            differenceCell.textContent = (difference > 0 ? '+' : '') + formatHours(difference);
             differenceCell.className = difference < 0 ? 'negative' : 'positive';
         }
         row.insertCell().textContent = formatHours(overtime);
+        [1, 2, 3, 4].forEach((index) => row.cells[index].classList.add('num'));
 
         const editButton = document.createElement("button");
-        editButton.textContent = "Bearbeiten";
+        editButton.textContent = "Tage ansehen";
         editButton.className = 'secondary small';
         editButton.addEventListener('click', () => toggleViewMonth(month));
         row.insertCell().appendChild(editButton);
     }
 
+    const difference = totals.actual - totals.toDate;
     const footer = table.createTFoot().insertRow();
     footer.className = 'total-row';
     footer.insertCell().textContent = 'Summe';
     footer.insertCell().textContent = formatHours(totals.target);
     footer.insertCell().textContent = formatHours(totals.actual);
-    footer.insertCell().textContent = formatHours(totals.actual - totals.elapsedTarget);
+    footer.insertCell().textContent = (difference > 0 ? '+' : '') + formatHours(difference);
     footer.insertCell().textContent = formatHours(totals.overtime);
     footer.insertCell();
-}
-
-/** Target hours of a normal working day, for example 8 for 40 hours per week. */
-function dailyTarget() {
-    return targetHours(new Date(2024, 0, 2), weeklyHours); // 2 January 2024 was a regular Tuesday
-}
-
-/**
- * Target hours for a month: working days times the daily target.
- * With `until`, only days up to and including that date are counted.
- */
-function monthlyTarget(month, until = null) {
-    let target = 0;
-    for (let day = 1; day <= getDaysInMonth(currentYear, month); day++) {
-        const date = new Date(currentYear, month - 1, day);
-        if (until && date > until) {
-            break;
-        }
-        target += targetHours(date, weeklyHours);
-    }
-    return target;
 }

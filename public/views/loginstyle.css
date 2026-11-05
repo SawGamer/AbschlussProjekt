@@ -1,122 +1,74 @@
-* {
-    box-sizing: border-box;
-}
+/* Login and logout pages. Colors and controls come from styling.css. */
 
 body.login-page {
-    min-height: 100vh;
-    margin: 0;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     place-items: center;
-    background: linear-gradient(135deg, #24384d 0%, #5486b8 100%);
-    font-family: 'Ubuntu', system-ui, sans-serif;
-    color: #1f2933;
-    padding: 16px;
+    padding: 24px 16px;
+    background:
+        linear-gradient(to bottom, var(--nav-bg) 0 38%, var(--bg) 38% 100%);
 }
 
 .login-card {
     width: 100%;
-    max-width: 400px;
-    background: #fff;
-    border-radius: 12px;
+    max-width: 420px;
     padding: 32px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    box-shadow: 0 24px 48px rgba(15, 25, 35, 0.18);
+}
+
+.login-brand {
+    font-family: var(--font-narrow);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--accent);
 }
 
 .login-card h1 {
-    margin: 0;
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #24384d;
+    margin-top: 6px;
 }
 
 .login-card .subtitle {
-    margin: 0 0 24px;
-    color: #6b7785;
+    margin: 6px 0 22px;
+    color: var(--muted);
 }
 
-.field {
-    margin-bottom: 16px;
+.login-card form {
+    display: flex;
+    flex-direction: column;
 }
 
-.field label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 500;
-}
-
-.field input {
+.login-card input {
     width: 100%;
-    font: inherit;
     padding: 10px 12px;
-    border: 1px solid #ccd4dd;
-    border-radius: 6px;
-}
-
-.field input:focus {
-    outline: 2px solid #5486b8;
-    outline-offset: -1px;
 }
 
 .input-group {
     display: flex;
+    margin-top: 5px;
 }
 
 .input-group input {
-    border-radius: 6px 0 0 6px;
+    border-radius: var(--radius) 0 0 var(--radius);
 }
 
 .input-group button {
-    font: inherit;
-    padding: 0 14px;
-    border: 1px solid #ccd4dd;
+    border-radius: 0 var(--radius) var(--radius) 0;
     border-left: none;
-    border-radius: 0 6px 6px 0;
-    background: #f4f6f9;
-    color: #3d6b99;
-    cursor: pointer;
-}
-
-#submitbtn {
-    width: 100%;
-    font: inherit;
-    font-weight: 500;
-    padding: 11px;
-    border: none;
-    border-radius: 6px;
-    background: #5486b8;
-    color: #fff;
-    cursor: pointer;
-}
-
-#submitbtn:hover {
-    background: #3d6b99;
-}
-
-.alert {
-    margin-bottom: 16px;
-    padding: 10px 14px;
-    border-radius: 6px;
-}
-
-.alert-danger {
-    background: #fdecea;
-    color: #c0392b;
-}
-
-.alert-warning {
-    background: #fff4e0;
-    color: #8a5a00;
-}
-
-.login-link {
-    color: #3d6b99;
-    font-weight: 500;
 }
 
 span.error {
     display: block;
-    min-height: 1.25em;
-    margin-top: 4px;
+    min-height: 1.4em;
+    margin: 4px 0 8px;
     font-size: 0.85rem;
-    color: #c0392b;
+    color: var(--danger);
+}
+
+#submitbtn {
+    width: 100%;
+    padding: 11px;
+    margin-top: 4px;
 }

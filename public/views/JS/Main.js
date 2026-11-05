@@ -1,13 +1,24 @@
+// Time tables (month and year view) with navigation and CSV export.
+// Used by the employee panel for their own hours and by the admin panel for anyone's.
+
 import { updateMonthlyView, initializeMonthlyView } from './MonthlyHours.js';
 import { updateYearlyView, initializeYearlyView } from './YearlyHours.js';
+import { apiRaw } from './Authentication.js';
+import { h, toast, download } from './ui.js';
 
 export let currentYear = new Date().getFullYear();
 export let currentMonth = new Date().getMonth() + 1;
 
-// Contracted hours per week, loaded with the employee's data on the home view.
+// Whose hours are shown, and their contracted hours per week.
+export let subjectId = new URLSearchParams(window.location.search).get('id');
 export let weeklyHours = 40;
 
 export let isYearlyView = false;
+
+export function setSubject(id, hours) {
+    subjectId = String(id);
+    setWeeklyHours(Number(hours));
+}
 
 export function setWeeklyHours(hours) {
     if (Number.isFinite(hours) && hours > 0) {
@@ -16,6 +27,7 @@ export function setWeeklyHours(hours) {
 }
 
 export function initializeView() {
+    updateViewButtons();
     if (isYearlyView) {
         initializeYearlyView();
     } else {
@@ -23,49 +35,30 @@ export function initializeView() {
     }
 }
 
-export function attachEventListeners() {
-    const prevButton = document.getElementById('prevbutton');
-    const nextButton = document.getElementById('nextbutton');
-    const toggleViewButton = document.getElementById('toggleView');
-
-    if (prevButton && nextButton && toggleViewButton) {
-        prevButton.addEventListener('click', () => changeDate(-1));
-        nextButton.addEventListener('click', () => changeDate(1));
-        toggleViewButton.addEventListener('click', toggleViewYear);
-    } else {
-        console.error('Navigation buttons not found');
-    }
-}
-
-function toggleViewYear() {
+function toggleView() {
     isYearlyView = !isYearlyView;
-    updateToggleLabel();
     initializeView();
 }
 
 export function toggleViewMonth(month) {
     currentMonth = month;
     isYearlyView = false;
-    updateToggleLabel();
     initializeView();
 }
 
-function updateToggleLabel() {
-    const button = document.getElementById('toggleView');
-    if (button) {
-        button.textContent = isYearlyView ? 'Monatsansicht' : 'Jahresansicht';
-    }
+function updateViewButtons() {
+    const toggle = document.getElementById('toggleView');
+    const exportButton = document.getElementById('exportButton');
+    if (toggle) toggle.textContent = isYearlyView ? 'Monatsansicht' : 'Jahresansicht';
+    if (exportButton) exportButton.hidden = isYearlyView;
 }
 
 function changeDate(delta) {
     if (isYearlyView) {
-        changeYear(delta);
-    } else {
-        changeMonth(delta);
+        currentYear += delta;
+        updateYearlyView();
+        return;
     }
-}
-
-function changeMonth(delta) {
     currentMonth += delta;
     if (currentMonth > 12) {
         currentMonth = 1;
@@ -77,62 +70,31 @@ function changeMonth(delta) {
     updateMonthlyView();
 }
 
-function changeYear(delta) {
-    currentYear += delta;
-    updateYearlyView();
+async function exportMonth() {
+    try {
+        const response = await apiRaw(`api/user/export?id=${encodeURIComponent(subjectId)}&year=${currentYear}&month=${currentMonth}`);
+        await download(response, `arbeitszeiten-${currentYear}-${currentMonth}.csv`);
+        toast('Export heruntergeladen.');
+    } catch (error) {
+        toast(error.message, true);
+    }
 }
 
-export function setActiveNav(id) {
-    document.querySelectorAll('.menulink').forEach((link) => {
-        link.classList.toggle('active', link.id === id);
-    });
-}
-
-export function createWorkHoursView() {
-    setActiveNav('zeiterfassungLink');
-
-    const container = document.getElementById('contentPlaceholder');
-    container.className = 'container';
-    container.innerHTML = '';
-
-    const titleDiv = document.createElement('div');
-    const title = document.createElement('h2');
-    title.id = 'Title';
-    titleDiv.appendChild(title);
-    container.appendChild(titleDiv);
-
-    const navDiv = document.createElement('div');
-    navDiv.id = 'nav';
-    navDiv.className = 'navtracker';
-
-    const prevButton = createButton('prevbutton', '‹ Zurück');
-    const nextButton = createButton('nextbutton', 'Weiter ›');
-    const toggleViewButton = createButton('toggleView', isYearlyView ? 'Monatsansicht' : 'Jahresansicht');
-    toggleViewButton.classList.add('secondary');
-
-    const currentPeriodSpan = document.createElement('span');
-    currentPeriodSpan.id = 'currentPeriod';
-
-    navDiv.appendChild(prevButton);
-    navDiv.appendChild(currentPeriodSpan);
-    navDiv.appendChild(nextButton);
-    navDiv.appendChild(toggleViewButton);
-    container.appendChild(navDiv);
-
-    const message = document.createElement('div');
-    message.id = 'tableMessage';
-    message.className = 'message';
-    message.hidden = true;
-    container.appendChild(message);
-
-    const workHoursContainer = document.createElement('div');
-    workHoursContainer.className = 'work-hours-table-container';
-
-    const table = document.createElement('table');
-    table.id = 'workHoursTable';
-    workHoursContainer.appendChild(table);
-
-    container.appendChild(workHoursContainer);
+/** Builds navigation, message area and table into the container, then loads the data. */
+export function createWorkHoursView(container) {
+    container.append(
+        h('div', { id: 'nav', class: 'navtracker' },
+            h('button', { id: 'prevbutton', class: 'secondary', 'aria-label': 'Vorheriger Zeitraum', text: '‹ Zurück', on: { click: () => changeDate(-1) } }),
+            h('span', { id: 'currentPeriod', 'aria-live': 'polite' }),
+            h('button', { id: 'nextbutton', class: 'secondary', 'aria-label': 'Nächster Zeitraum', text: 'Weiter ›', on: { click: () => changeDate(1) } }),
+            h('span', { class: 'spacer' }),
+            h('button', { id: 'exportButton', class: 'secondary', text: 'Als CSV exportieren', on: { click: exportMonth } }),
+            h('button', { id: 'toggleView', class: 'secondary', on: { click: toggleView } }),
+        ),
+        h('div', { id: 'tableMessage', class: 'message', hidden: true }),
+        h('div', { class: 'work-hours-table-container' }, h('table', { id: 'workHoursTable' })),
+    );
+    initializeView();
 }
 
 /** Shows a short status or error message above the table. */
@@ -145,16 +107,9 @@ export function showTableMessage(text, isError = false) {
     message.classList.toggle('error', isError);
     message.hidden = false;
     clearTimeout(showTableMessage.timer);
-    showTableMessage.timer = setTimeout(() => { message.hidden = true; }, 4000);
+    showTableMessage.timer = setTimeout(() => { message.hidden = true; }, 5000);
 }
 
 export function formatHours(value) {
     return Number(value || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function createButton(id, text) {
-    const button = document.createElement('button');
-    button.id = id;
-    button.textContent = text;
-    return button;
 }

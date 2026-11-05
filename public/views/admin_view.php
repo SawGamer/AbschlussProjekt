@@ -1,45 +1,34 @@
-<?php $base = rtrim(dirname($_SERVER['SCRIPT_NAME'], 2), '/\\') . '/'; ?>
+<?php
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME'], 2), '/\\') . '/';
+// Links to #/routes must name this page, because <base> points elsewhere.
+$self = htmlspecialchars(strtok($_SERVER['REQUEST_URI'], '#'));
+$title = 'Verwaltung';
+?>
 <!DOCTYPE html>
 <html lang="de">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <base href="<?= htmlspecialchars($base) ?>" />
-    <title>Admin | WorkForce</title>
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Ubuntu:400,500,700">
-    <link rel="stylesheet" href="views/styling.css">
+<?php include __DIR__ . '/partials/head.php'; ?>
 </head>
 
 <body>
-    <nav class="head">
-        <div class="box1">WorkForce</div>
-        <div id="name" class="box2">Hallo</div>
-    </nav>
-    <nav class="side-nav">
-        <a class="menulink active" href="views/admin_view.php">Mitarbeitende</a>
-        <a id="logout" class="menulink" href="javascript:void(0)">Abmelden</a>
-    </nav>
-    <main id="contentPlaceholder" class="container">
-        <h2>Mitarbeitende: <span id="monthLabel"></span></h2>
-        <div id="tableMessage" class="message" hidden></div>
-        <div class="work-hours-table-container">
-            <table id="userList" class="work-hours-table">
-                <thead>
-                    <tr class="table-header-row">
-                        <th>Name</th>
-                        <th>Benutzername</th>
-                        <th>Firma</th>
-                        <th>Wochenstunden</th>
-                        <th>Stunden im Monat</th>
-                        <th>Überstunden im Monat</th>
-                        <th>Rolle</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+    <nav class="side-nav" aria-label="Hauptmenü">
+        <div class="brand">WorkForce <small>Verwaltung</small></div>
+        <a class="menulink" data-route="dashboard" href="<?= $self ?>#/dashboard">Dashboard</a>
+        <a class="menulink" data-route="mitarbeitende" href="<?= $self ?>#/mitarbeitende">Mitarbeitende</a>
+        <a class="menulink" data-route="zeiten" href="<?= $self ?>#/zeiten">Zeiten</a>
+        <a class="menulink" data-route="urlaub" href="<?= $self ?>#/urlaub">Urlaubsanträge <span id="pendingCount" class="count" hidden></span></a>
+        <a class="menulink" data-route="protokoll" href="<?= $self ?>#/protokoll">Protokoll</a>
+
+        <div class="nav-footer">
+            <div class="nav-user">Angemeldet als <strong id="navName"></strong></div>
+            <a id="ownTimesLink" class="menulink" href="views/user_view.php">Meine Zeiterfassung</a>
+            <button id="themeButton" class="menulink nav-button" type="button">Darstellung</button>
+            <button id="logout" class="menulink nav-button" type="button">Abmelden</button>
         </div>
-    </main>
+    </nav>
+
+    <main id="contentPlaceholder" tabindex="-1"></main>
 
     <script type="module" src="views/JS/admin.js"></script>
 </body>
